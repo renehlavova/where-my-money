@@ -1,0 +1,82 @@
+image: registry.gitlab.com/tomasvotava/python:3.10-slim
+
+stages:
+  - lint
+  - test
+  - deploy
+
+cache:
+  key:
+    files:
+      - poetry.lock
+  paths:
+    - ".venv/"
+
+variables:
+  POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+
+default:
+  before_script:
+    - poetry install
+    - . .venv/bin/activate
+
+isort:
+  stage: lint
+  script:
+    - poe isort-check
+
+black:
+  stage: lint
+  script:
+    - poe black-check
+
+
+mypy:
+  stage: lint
+  script:
+    - poe mypy
+
+
+pylint:
+  stage: lint
+  script:
+    - poe pylint
+
+
+test:
+  stage: test
+  script:
+    - poe test
+    - poe coverage
+  coverage: '/TOTAL.*\s([.\d]+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cov.xml
+      junit: cov.xml
+  only:
+    - tags
+    - master
+    - merge_requests
+
+
+build:
+  image: docker:latest
+  stage: deploy
+  before_script:
+    - docker info
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  only:
+    - tags
+    - master
+    - merge_requests
+
+
