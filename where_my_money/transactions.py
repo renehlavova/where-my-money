@@ -56,9 +56,6 @@ class GenericTransaction(BaseModel):
     ### bool
     is_completed: bool | None  # state + is_completed
 
-    def find_transfer_between_accounts(self):
-        ...
-
 
 class RevolutTransaction(BaseModel, BaseTransaction):
     """Mapping for Revolut transactions"""
