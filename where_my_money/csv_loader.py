@@ -1,5 +1,7 @@
 """CSV loader class"""
 
+# pylint: disable=too-few-public-methods
+
 import csv
 from typing import Iterable, Type, TypeVar
 

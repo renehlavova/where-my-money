@@ -1,10 +1,22 @@
 """Classes for transaction mapping"""
 
+# pylint: disable=too-few-public-methods
+
 from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 from unidecode import unidecode
+
+
+def clean_dict(dct: dict) -> dict:
+    """Clean dict from empty strings"""
+
+    for key, value in dct.items():
+        if value == "":
+            dct[key] = None
+
+    return dct
 
 
 class BaseTransaction:
@@ -106,11 +118,7 @@ class RevolutTransaction(BaseModel, BaseTransaction):
     def from_dict(dct: dict) -> "RevolutTransaction":
         """Mapping from dict"""
 
-        for key, value in dct.items():
-            if value == "":
-                dct[key] = None
-
-        return RevolutTransaction(**dct)
+        return RevolutTransaction(**clean_dict(dct))
 
 
 class AirbankTransaction(BaseModel, BaseTransaction):
@@ -178,11 +186,7 @@ class AirbankTransaction(BaseModel, BaseTransaction):
     def from_dict(dct: dict) -> "AirbankTransaction":
         """Mapping from dict"""
 
-        for key, value in dct.items():
-            if value == "":
-                dct[key] = None
-
-        kwargs = {str(key): value for key, value in dct.items()}
+        kwargs = {str(key): value for key, value in clean_dict(dct).items()}
 
         return AirbankTransaction(**kwargs)
 
@@ -240,4 +244,5 @@ class RaiffeisenTransaction(BaseModel, BaseTransaction):
     @staticmethod
     def from_dict(dct: dict) -> "RaiffeisenTransaction":
         """Convert dict to RaiffeisenTransaction"""
-        return RaiffeisenTransaction(**dct)
+
+        return RaiffeisenTransaction(**clean_dict(dct))
