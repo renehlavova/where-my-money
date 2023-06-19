@@ -4,12 +4,15 @@ from datetime import datetime
 
 from typing import Literal
 from pydantic import BaseModel, Field
+from unidecode import unidecode
 
 
-def parse_date(date_str: str) -> datetime:
+def parse_date(date_str: str, hhmm=False) -> datetime:
     """Parse datetime from the specified format"""
 
-    return datetime.strptime(date_str, "%d/%m/%Y")
+    if hhmm:
+        return datetime.strptime(date_str, "%d.%m.%Y %H:%M")
+    return datetime.strptime(date_str, "%d.%m.%Y")
 
 
 class BaseTransaction:
@@ -31,7 +34,7 @@ class GenericTransaction(BaseModel):
     ### dimensions
     source: str
     account_type: str
-    payment_type: str
+    payment_type: str | None
     payment_instruction: str | None
     payment_category: str | None
     ### amount
@@ -86,14 +89,14 @@ class RevolutTransaction(BaseModel, BaseTransaction):
         return GenericTransaction(
             source=self.source,
             account_type=self.account_type,
-            payment_type=self.payment_type,
+            payment_type=self.payment_type.lower(),
             payment_instruction=None,
             payment_category=None,
             currency=self.currency,
             amount=self.amount,
             fee=self.fee,
             balance=self.balance,
-            description=self.description,
+            description=unidecode(self.description.lower()) if self.description else None,
             message_for_sender=None,
             message_for_recipient=None,
             counterparty=None,
@@ -156,20 +159,22 @@ class AirbankTransaction(BaseModel, BaseTransaction):
         return GenericTransaction(
             source=self.source,
             account_type=self.account_type,
-            payment_type=self.payment_type,
-            payment_instruction=self.payment_instruction,
-            payment_category=self.payment_category,
+            payment_type=unidecode(self.payment_type.lower()),
+            payment_instruction=unidecode(self.payment_instruction.lower()),
+            payment_category=unidecode(self.payment_category.lower()),
             currency=self.currency,
             amount=float(self.amount.replace(",", ".")),
             fee=float(self.fee) if self.fee is not None else None,
             balance=None,
-            description=self.description,
-            message_for_sender=self.message_for_sender,
-            message_for_recipient=self.message_for_recipient,
-            counterparty=self.counterparty,
+            description=unidecode(self.description.lower()) if self.description else None,
+            message_for_sender=unidecode(self.message_for_sender.lower()) if self.message_for_sender else None,
+            message_for_recipient=unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None,
+            counterparty=unidecode(self.counterparty.lower()),
             counterparty_account_number=self.counterparty_account_number,
-            counterparty_account_name=self.counterparty_account_name,
-            business=self.business,
+            counterparty_account_name=unidecode(self.counterparty_account_name.lower())
+            if self.counterparty_account_name
+            else None,
+            business=unidecode(self.business.lower()) if self.business else None,
             payment_date=parse_date(self.payment_date) if self.payment_date else None,
             started_date=parse_date(self.started_date) if self.started_date else None,
             due_date=parse_date(self.due_date) if self.due_date else None,
@@ -219,24 +224,26 @@ class RaiffeisenTransaction(BaseModel, BaseTransaction):
         return GenericTransaction(
             source=self.source,
             account_type=self.account_type,
-            payment_type=self.payment_type or "",
+            payment_type=unidecode(self.payment_type.lower()) if self.payment_type else None,
             payment_instruction=None,
             payment_category=None,
             currency=self.currency,
-            amount=float(self.amount.replace(",", ".")),
-            fee=float(self.fee) if self.fee is not None else None,
+            amount=float(self.amount.replace(",", ".").replace(" ", "")),
+            fee=float(self.fee.replace(",", ".")) if self.fee is not None else None,
             balance=None,
-            description=self.description,
-            message_for_sender=self.message_for_sender,
-            message_for_recipient=self.message_for_recipient,
-            counterparty=self.counterparty,
-            counterparty_account_name=self.counterparty_account_name,
+            description=unidecode(self.description.lower()) if self.description else None,
+            message_for_sender=unidecode(self.message_for_sender.lower()) if self.message_for_sender else None,
+            message_for_recipient=unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None,
+            counterparty=unidecode(self.counterparty.lower()),
+            counterparty_account_name=unidecode(self.counterparty_account_name.lower())
+            if self.counterparty_account_name
+            else None,
             counterparty_account_number=self.counterparty_account_number,
             business=None,
             payment_date=parse_date(self.payment_date),
             started_date=None,
             due_date=None,
-            completed_date=parse_date(self.completed_date) if self.completed_date else None,
+            completed_date=parse_date(self.completed_date, hhmm=True) if self.completed_date else None,
             is_completed=bool(self.completed_date),
         )
 
