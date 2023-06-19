@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def main():
     """Main entrypoint"""
     logging.basicConfig(level=logging.INFO)

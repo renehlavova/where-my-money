@@ -1,18 +1,10 @@
 """Classes for transaction mapping"""
 
 from datetime import datetime
-
 from typing import Literal
+
 from pydantic import BaseModel, Field
 from unidecode import unidecode
-
-
-def parse_date(date_str: str, hhmm=False) -> datetime:
-    """Parse datetime from the specified format"""
-
-    if hhmm:
-        return datetime.strptime(date_str, "%d.%m.%Y %H:%M")
-    return datetime.strptime(date_str, "%d.%m.%Y")
 
 
 class BaseTransaction:
@@ -175,18 +167,16 @@ class AirbankTransaction(BaseModel, BaseTransaction):
             if self.counterparty_account_name
             else None,
             business=unidecode(self.business.lower()) if self.business else None,
-            payment_date=parse_date(self.payment_date) if self.payment_date else None,
-            started_date=parse_date(self.started_date) if self.started_date else None,
-            due_date=parse_date(self.due_date) if self.due_date else None,
-            completed_date=parse_date(self.completed_date) if self.completed_date else None,
+            payment_date=datetime.strptime(self.payment_date, "%d/%m/%Y") if self.payment_date else None,
+            started_date=datetime.strptime(self.started_date, "%d/%m/%Y %H:%M:%S") if self.started_date else None,
+            due_date=datetime.strptime(self.due_date, "%d/%m/%Y") if self.due_date else None,
+            completed_date=datetime.strptime(self.completed_date, "%d/%m/%Y") if self.completed_date else None,
             is_completed=self.is_completed == "Ano",
         )
 
     @staticmethod
     def from_dict(dct: dict) -> "AirbankTransaction":
-        # return AirbankTransaction(**dct)
-        # Convert keys to strings
-        print(dct)
+        """Mapping from dict"""
 
         for key, value in dct.items():
             if value == "":
@@ -240,13 +230,14 @@ class RaiffeisenTransaction(BaseModel, BaseTransaction):
             else None,
             counterparty_account_number=self.counterparty_account_number,
             business=None,
-            payment_date=parse_date(self.payment_date),
+            payment_date=datetime.strptime(self.payment_date, "%d.%m.%Y"),
             started_date=None,
             due_date=None,
-            completed_date=parse_date(self.completed_date, hhmm=True) if self.completed_date else None,
+            completed_date=datetime.strptime(self.completed_date, "%d.%m.%Y %H:%M") if self.completed_date else None,
             is_completed=bool(self.completed_date),
         )
 
     @staticmethod
     def from_dict(dct: dict) -> "RaiffeisenTransaction":
+        """Convert dict to RaiffeisenTransaction"""
         return RaiffeisenTransaction(**dct)
