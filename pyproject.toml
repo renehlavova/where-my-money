@@ -1,38 +1,10 @@
 [tool.poetry]
 name = "where_my_money"
 version = "0.1.0"
-description = ""
+description = "Python app for personal finance management"
+readme = "README.md"
 authors = ["Rene Hlavova <rene.hlavova@gmail.com>"]
 license = "MIT"
-
-[tool.black]
-line-length = 120
-
-[tool.pytest.ini_options]
-testpaths = ["tests/"]
-addopts = "-v --cov=where_my_money --cov-report xml:cov.xml"
-
-[tool.pyright]
-ignore = "**/tests/"
-
-[tool.poe.tasks]
-isort = "isort where_my_money/"
-isort-check = "isort --check where_my_money/"
-black = "black where_my_money/"
-black-check = "black --check where_my_money/"
-mypy = "mypy --config-file mypy.ini where_my_money/"
-pylint = "pylint where_my_money/"
-
-format = ["isort", "black"]
-lint = ["isort-check", "black-check", "pylint", "mypy"]
-test = "pytest"
-coverage = "coverage report"
-tox = "tox"
-
-build = "poetry build"
-docker = "docker build -t bizztreat/where_my_money ."
-
-run = "python -um where_my_money.main"
 
 [tool.poetry.dependencies]
 python = "^3.9,<=3.11"
@@ -51,6 +23,31 @@ pytest-cov = "^4.0.0"
 tox = "^3.27.1"
 tox-poetry = "^0.4.1"
 
+[tool.black]
+line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests/"]
+addopts = "-v --cov=where_my_money --cov-report xml:cov.xml"
+
+[tool.poe.tasks]
+isort = "isort where_my_money/ tests/"
+isort-check = "isort --check where_my_money/ tests/"
+black = "black where_my_money/ tests/"
+black-check = "black --check where_my_money/ tests/"
+mypy = "mypy --config-file mypy.ini where_my_money/ tests/"
+pylint = "pylint where_my_money/ tests/"
+
+format = ["isort", "black"]
+lint = ["isort-check", "black-check", "pylint", "mypy"]
+test = "pytest"
+coverage = "coverage report"
+tox = "tox"
+
+build = "poetry build"
+docker = "docker build -t renehlavova/where_my_money ."
+
+run = "python -um where_my_money.main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
