@@ -35,6 +35,7 @@ class BaseTransaction:
 class GenericTransaction(BaseModel):
     """Mapping for all transactions"""
 
+    id: str
     ### dimensions
     source: str
     account_type: str
@@ -48,13 +49,9 @@ class GenericTransaction(BaseModel):
     balance: float | None
     ### descriptions
     description: str | None
-    message_for_sender: str | None
-    message_for_recipient: str | None
     ### counterparty
     counterparty: str | None
-    counterparty_account_number: str | None
     counterparty_account_name: str | None
-    business: str | None
     ### dates
     payment_date: datetime | None
     started_date: datetime | None
@@ -75,6 +72,7 @@ class RevolutTransaction(BaseModel, BaseTransaction):
 
     __file_encoding__: str = "utf-8"
     __delimiter__: str = ","
+    id: str
     source: str = "revolut"
     account_type: str = "basic"
     payment_type: str = Field(alias="Type")
@@ -91,6 +89,7 @@ class RevolutTransaction(BaseModel, BaseTransaction):
         """Mapping to generic transaction"""
 
         return GenericTransaction(
+            id=self.payment_type.lower() + str(self.started_date) + str(self.amount),
             source=self.source,
             account_type=self.account_type,
             payment_type=self.payment_type.lower(),
@@ -101,12 +100,8 @@ class RevolutTransaction(BaseModel, BaseTransaction):
             fee=self.fee,
             balance=self.balance,
             description=unidecode(self.description.lower()) if self.description else None,
-            message_for_sender=None,
-            message_for_recipient=None,
             counterparty=None,
             counterparty_account_name=None,
-            counterparty_account_number=None,
-            business=None,
             payment_date=None,
             started_date=self.started_date,
             due_date=None,
@@ -132,6 +127,7 @@ class AirbankTransaction(BaseModel, BaseTransaction):
 
     __file_encoding__: str = "cp1250"
     __delimiter__: str = ";"
+    id: str = Field(alias="Referenční číslo")
     source: str = "airbank"
     account_type: Literal["basic"] | Literal["savings"]
     payment_date: str = Field(alias="Datum provedení")
@@ -141,10 +137,8 @@ class AirbankTransaction(BaseModel, BaseTransaction):
     currency: str = Field(alias="Měna účtu")
     amount: str = Field(alias="Částka v měně účtu")
     fee: str | None = Field(alias="Poplatek v měně účtu")
-    counterparty: str = Field(alias="Název protistrany")
-    counterparty_account_number: str | None = Field(alias="Číslo účtu protistrany")
+    counterparty: str | None = Field(alias="Název protistrany")
     counterparty_account_name: str | None = Field(alias="Název účtu protistrany")
-    message_for_sender: str | None = Field(alias="Poznámka pro mne")
     message_for_recipient: str | None = Field(alias="Zpráva pro příjemce")
     description: str | None = Field(alias="Poznámka k úhradě")
     business: str | None = Field(alias="Obchodní místo")
@@ -157,6 +151,7 @@ class AirbankTransaction(BaseModel, BaseTransaction):
         """Mapping to generic transaction"""
 
         return GenericTransaction(
+            id=self.id,
             source=self.source,
             account_type=self.account_type,
             payment_type=unidecode(self.payment_type.lower()),
@@ -164,17 +159,17 @@ class AirbankTransaction(BaseModel, BaseTransaction):
             payment_category=unidecode(self.payment_category.lower()),
             currency=self.currency,
             amount=float(self.amount.replace(",", ".")),
-            fee=float(self.fee) if self.fee is not None else None,
+            fee=float(self.fee.replace(",", "")) if self.fee is not None else None,
             balance=None,
-            description=unidecode(self.description.lower()) if self.description else None,
-            message_for_sender=unidecode(self.message_for_sender.lower()) if self.message_for_sender else None,
-            message_for_recipient=unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None,
-            counterparty=unidecode(self.counterparty.lower()),
-            counterparty_account_number=self.counterparty_account_number,
+            description=unidecode(self.description.lower())
+            if self.description
+            else (unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None),
+            counterparty=unidecode(self.counterparty.lower())
+            if self.counterparty
+            else (unidecode(self.business.lower()) if self.business else None),
             counterparty_account_name=unidecode(self.counterparty_account_name.lower())
             if self.counterparty_account_name
             else None,
-            business=unidecode(self.business.lower()) if self.business else None,
             payment_date=datetime.strptime(self.payment_date, "%d/%m/%Y") if self.payment_date else None,
             started_date=datetime.strptime(self.started_date, "%d/%m/%Y %H:%M:%S") if self.started_date else None,
             due_date=datetime.strptime(self.due_date, "%d/%m/%Y") if self.due_date else None,
@@ -196,26 +191,26 @@ class RaiffeisenTransaction(BaseModel, BaseTransaction):
 
     __file_encoding__: str = "cp1250"
     __delimiter__: str = ";"
+    id: str = Field(alias="Id transakce")
     source: str = "raiffeisen"
     account_type: Literal["basic"] | Literal["savings"]
     payment_date: str = Field(alias="Datum provedení")
     completed_date: str | None = Field(alias="Datum zaúčtování")
     payment_category: str = Field(alias="Kategorie transakce")
-    counterparty_account_number: str | None = Field(alias="Číslo protiúčtu")
     counterparty_account_name: str | None = Field(alias="Název protiúčtu")
-    payment_type: str | None = Field(alias="Typ úhrady")
+    payment_type: str | None = Field(alias="Typ transakce")
     message_for_recipient: str | None = Field(alias="Zpráva")
     description: str | None = Field(alias="Poznámka")
     amount: str = Field(alias="Zaúčtovaná částka")
     currency: str = Field(alias="Měna účtu")
     fee: str | None = Field(alias="Poplatek")
-    message_for_sender: str | None = Field(alias="Vlastní poznámka")
-    counterparty: str = Field(alias="Název obchodníka")
+    counterparty: str | None = Field(alias="Název obchodníka")
 
     def to_generic_transaction(self) -> "GenericTransaction":
         """Mapping to generic transaction"""
 
         return GenericTransaction(
+            id=self.id,
             source=self.source,
             account_type=self.account_type,
             payment_type=unidecode(self.payment_type.lower()) if self.payment_type else None,
@@ -225,15 +220,13 @@ class RaiffeisenTransaction(BaseModel, BaseTransaction):
             amount=float(self.amount.replace(",", ".").replace(" ", "")),
             fee=float(self.fee.replace(",", ".")) if self.fee is not None else None,
             balance=None,
-            description=unidecode(self.description.lower()) if self.description else None,
-            message_for_sender=unidecode(self.message_for_sender.lower()) if self.message_for_sender else None,
-            message_for_recipient=unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None,
-            counterparty=unidecode(self.counterparty.lower()),
+            description=unidecode(self.description.lower())
+            if self.description
+            else (unidecode(self.message_for_recipient.lower()) if self.message_for_recipient else None),
+            counterparty=unidecode(self.counterparty.lower()) if self.counterparty else None,
             counterparty_account_name=unidecode(self.counterparty_account_name.lower())
             if self.counterparty_account_name
             else None,
-            counterparty_account_number=self.counterparty_account_number,
-            business=None,
             payment_date=datetime.strptime(self.payment_date, "%d.%m.%Y"),
             started_date=None,
             due_date=None,
