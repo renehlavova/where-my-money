@@ -6,12 +6,11 @@ import re
 from sqlmodel import Session, select
 import yaml
 from where_my_money.models import CategorizedTransaction, Category
+from where_my_money.seed import DEFAULT_CATEGORY_ID
 
 from where_my_money.transactions import GenericTransaction
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_CATEGORY = "Nezařazený výdaj"
 
 
 class CategoryMapper:
@@ -21,6 +20,20 @@ class CategoryMapper:
         self.mapping_file = mapping_file
         self.database_engine = database_engine
         self.mapping = self.load_mapping_from_yaml(mapping_file)
+        category_dict = self.get_category_dict()
+        try:
+            self.mapping = [{**rule, "category_id": category_dict[rule["category"]]} for rule in self.mapping]
+        except KeyError:
+            logger.error("Category not found in database.")
+            raise
+
+    def get_category_dict(self) -> dict:
+        """Convert category to category id."""
+        with Session(self.database_engine) as session:
+            categories = session.query(Category).all()
+            category_dict = {category.name: category.id for category in categories}
+
+        return category_dict
 
     @staticmethod
     def load_mapping_from_yaml(mapping_file: str) -> list[dict]:
@@ -39,13 +52,12 @@ class CategoryMapper:
 
     def get_category_from_mapping(self, transaction: GenericTransaction) -> CategorizedTransaction:
         """Return category from mapping."""
-        category_dict = self.get_category_id()
 
         for rule in self.mapping:
             conditions_met = []
 
             for column, patterns in rule.items():
-                if column == "category":
+                if column in ["category", "category_id"]:
                     continue
 
                 if isinstance(patterns, str):
@@ -59,24 +71,14 @@ class CategoryMapper:
                 conditions_met.append(conditions_met_column)
 
             if all(conditions_met):
-                assigned_category = rule["category"]
+                assigned_category_id = rule["category_id"]
                 break
         else:
-            assigned_category = DEFAULT_CATEGORY
+            assigned_category_id = DEFAULT_CATEGORY_ID
 
-        category_id = category_dict.get(assigned_category, category_dict[DEFAULT_CATEGORY])
-
-        return CategorizedTransaction(**transaction.dict(), category_id=category_id)
+        return CategorizedTransaction(**transaction.dict(), category_id=assigned_category_id)
 
     @staticmethod
     def get_category_from_api(transaction: GenericTransaction) -> CategorizedTransaction:
         """Return category based on public data."""
         raise NotImplementedError
-
-    def get_category_id(self) -> dict:
-        """Convert category to category id."""
-        with Session(self.database_engine) as session:
-            categories = session.query(Category).all()
-            category_dict = {category.name: category.id for category in categories}
-
-        return category_dict
