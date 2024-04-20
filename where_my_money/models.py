@@ -19,9 +19,6 @@ class Category(SQLModel, table=True):
     group: str
     active: bool = True
 
-    class Config:
-        table_name = "categories"
-
 
 class CategorizedTransaction(SQLModel, GenericTransaction, table=True):
     """Pydantic class for categorized transaction."""
