@@ -1,44 +1,18 @@
 [tool.poetry]
 name = "where_my_money"
 version = "0.1.0"
-description = ""
+description = "Python app for personal finance management"
+readme = "README.md"
 authors = ["Rene Hlavova <rene.hlavova@gmail.com>"]
 license = "MIT"
 
-[tool.black]
-line-length = 120
-
-[tool.pytest.ini_options]
-testpaths = ["tests/"]
-addopts = "-v --cov=where_my_money --cov-report xml:cov.xml"
-
-[tool.pyright]
-ignore = "**/tests/"
-
-[tool.poe.tasks]
-isort = "isort where_my_money/"
-isort-check = "isort --check where_my_money/"
-black = "black where_my_money/"
-black-check = "black --check where_my_money/"
-mypy = "mypy --config-file mypy.ini where_my_money/"
-pylint = "pylint where_my_money/"
-
-format = ["isort", "black"]
-lint = ["isort-check", "black-check", "pylint", "mypy"]
-test = "pytest"
-coverage = "coverage report"
-tox = "tox"
-
-build = "poetry build"
-docker = "docker build -t bizztreat/where_my_money ."
-
-run = "python -um where_my_money.main"
-
 [tool.poetry.dependencies]
-python = "^3.9,<=3.11"
+python = ">=3.9,<=3.13"
 tomli = "^2.0.1"
 pydantic = "^1.10.6"
 unidecode = "^1.3.6"
+pyyaml = "^6.0.1"
+sqlmodel = "^0.0.8"
 
 [tool.poetry.dev-dependencies]
 black = "^22.10.0"
@@ -51,6 +25,46 @@ pytest-cov = "^4.0.0"
 tox = "^3.27.1"
 tox-poetry = "^0.4.1"
 
+[tool.black]
+line-length = 120
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.isort]
+multi_line_output=3
+include_trailing_comma = true
+line_length=120
+
+[tool.coverage]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:"
+]
+
+[tool.pytest.ini_options]
+addopts = ["--cov=where_my_money", "--cov-report=term-missing", "--cov-report=xml", "-vv", "tests/"]
+
+[tool.poe.tasks]
+isort = "isort where_my_money/ tests/"
+isort-check = "isort --check where_my_money/ tests/"
+black = "black where_my_money/ tests/"
+black-check = "black --check where_my_money/ tests/"
+mypy = "mypy --config-file mypy.ini where_my_money/ tests/"
+pylint = "pylint where_my_money/ tests/"
+
+recreate-db = "python3 -m where_my_money.database"
+
+format = ["isort", "black"]
+lint = ["isort-check", "black-check", "pylint", "mypy"]
+test = "pytest"
+coverage = "coverage report"
+tox = "tox"
+
+build = "poetry build"
+docker = "docker build -t renehlavova/where_my_money ."
+
+run = "python3 -um where_my_money.main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
